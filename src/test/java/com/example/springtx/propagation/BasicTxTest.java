@@ -97,4 +97,33 @@ public class BasicTxTest {
         log.info("트랜잭션2 롤백");
         txManager.rollback(tx2);
     }
+
+    /**
+     * 트랜잭션을 각각 사용하는 것이 아니라, 트랜잭션이 이미 진행중인데, 여기에 추가로 트랜잭션을 수행하면 어떻게 될까?
+     * 기존 트랜잭션과 별도의 트랜잭션을 진행해야 할까? 아니면 기존 트랜잭션을 그대로 이어 받아서 트랜잭션을 수행해야 할까?
+     * 기존의 트랜잭션이 커밋을 하지 않았는데 또 트랜잭션을 획득한다면 애매하다. 중첩되어서 시작되었다.
+     * 이런 경우 어떻게 동작할지 결정하는 것을 트랜잭션 전파라 한다.
+     * isNewTransaction 이것은 이게 처음 시작된 트랜잭션인지 아닌지를 판단하는 것이다.
+     * "내부 트랜잭션 커밋" 후 아무런 로그가 없이 "외부 트랜잭션 커밋" 이 나타난다.
+     * 그 후 "외부 트랜잭션 커밋" 이후에 "Initiating transaction commit" 이 나타난다.
+     * 스프링은 이렇게 여러 트랜잭션이 함께 사용되는 경우, 처음 트랜잭션을 시작한 외부 트랜잭션이 실제 물리 트랜잭션을 관리 하도록 한다.
+     * txManager.commit(outer); 이후에 닫히는 로그가 나타나고 그 다음
+     * txManager.commit(inner); 을 하면 이미 tx는 끝나서 아무것도 안나타난다.
+     */
+    @Test
+    void inner_commit() {
+        log.info("외부 트랜잭션 시작");
+        TransactionStatus outer = txManager.getTransaction(new DefaultTransactionAttribute());
+        log.info("outer.isNewTransaction()={}", outer.isNewTransaction());
+
+        log.info("내부 트랜잭션 시작");
+        TransactionStatus inner = txManager.getTransaction(new DefaultTransactionAttribute());
+        log.info("inner.isNewTransaction()={}", inner.isNewTransaction());
+        log.info("외부 트랜잭션 커밋");
+        txManager.commit(outer);
+        log.info("내부 트랜잭션 커밋");
+        txManager.commit(inner);
+
+
+    }
 }
