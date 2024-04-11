@@ -143,4 +143,25 @@ public class BasicTxTest {
         log.info("외부 트랜잭션 롤백");
         txManager.rollback(outer);
     }
+
+    /**
+     * marking existing transaction as rollback-only 이런것이 나타날 것이다. 뭔가 마킹. 표시를 한다는 것이다.
+     * 외부 트랜잭션 커밋을 하면
+     * Global transaction is marked as rollback-only but transactional code requested commit 이 나타난다.
+     * Initiating transaction rollback 그 후 물리적 Tx 롤백
+     */
+    @Test
+    void inner_rollback() {
+        log.info("외부 트랜잭션 시작");
+        TransactionStatus outer = txManager.getTransaction(new DefaultTransactionAttribute());
+
+        log.info("내부 트랜잭션 시작");
+        TransactionStatus inner = txManager.getTransaction(new DefaultTransactionAttribute());
+        log.info("내부 트랜잭션 롤백");
+        txManager.rollback(inner); //rollback-only 표시
+
+        log.info("외부 트랜잭션 커밋");
+        assertThatThrownBy(() -> txManager.commit(outer))
+                .isInstanceOf(UnexpectedRollbackException.class);
+    }
 }
