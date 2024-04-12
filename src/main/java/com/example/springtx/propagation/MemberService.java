@@ -16,6 +16,7 @@ public class MemberService {
     /**
      * 각 리포지토리가 서로 다른 트랜잭션을 사용한다.
      */
+    @Transactional
     public void joinV1(String username) {
         Member member = new Member(username);
         Log logMessage = new Log(username);
