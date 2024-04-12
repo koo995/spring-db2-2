@@ -164,4 +164,29 @@ public class BasicTxTest {
         assertThatThrownBy(() -> txManager.commit(outer))
                 .isInstanceOf(UnexpectedRollbackException.class);
     }
+
+    /**
+     * definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+     * 여기에 옵션을 추가한다.
+     * PROPAGATION_REQUIRES_NEW 옵션을 사용하면 물리 트랜잭션이 명확하게 분리된다.
+     * 그러면 데이터베이스 커넥션이 동시에 2개 사용된다는 점을 주의해야 한다.
+     */
+    @Test
+    void inner_rollback_requires_new() {
+        log.info("외부 트랜잭션 시작");
+        TransactionStatus outer = txManager.getTransaction(new DefaultTransactionAttribute());
+        log.info("outer.isNewTransaction()={}", outer.isNewTransaction()); //true
+
+        log.info("내부 트랜잭션 시작");
+        DefaultTransactionAttribute definition = new DefaultTransactionAttribute();
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        TransactionStatus inner = txManager.getTransaction(definition);
+        log.info("inner.isNewTransaction()={}", inner.isNewTransaction()); //true
+
+        log.info("내부 트랜잭션 롤백");
+        txManager.rollback(inner); //롤백
+
+        log.info("외부 트랜잭션 커밋");
+        txManager.commit(outer); //커밋
+    }
 }
